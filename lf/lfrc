@@ -1,0 +1,253 @@
+# interpreter for shell commands
+set shell zsh
+
+# set '-eu' options for shell commands
+# These options are used to have safer shell commands. Option '-e' is used to
+# exit on error and option '-u' is used to give error for unset variables.
+# Option '-f' disables pathname expansion which can be useful when $f, $fs, and
+# $fx variables contain names with '*' or '?' characters. However, this option
+# is used selectively within individual commands as it can be limiting at
+# times.
+set shellopts '-euy'
+set icons
+set period 1
+
+set cleaner '~/.config/lf/cleaner'
+set previewer '~/.config/lf/scope'
+
+# set previewer ctpv
+# set cleaner ctpvclear
+# &ctpv -s $id
+# &ctpvquit $id
+
+# set internal field separator (IFS) to "\n" for shell commands
+# This is useful to automatically split file names in $fs and $fx properly
+# since default file separator used in these variables (i.e. 'filesep' option)
+# is newline. You need to consider the values of these options and create your
+# commands accordingly.
+set ifs "\n"
+
+# leave some space at the top and the bottom of the screen
+set scrolloff 8
+
+# use enter for shell commands
+map <enter> open
+
+
+# cmds/functions
+cmd open ${{
+    case $(file --mime-type "$(readlink -f $f)" -b) in
+	application/vnd.openxmlformats-officedocument.spreadsheetml.sheet) localc $fx ;;
+	image/vnd.djvu|application/pdf|application/octet-stream|application/postscript) setsid -f zathura $fx >/dev/null 2>&1 ;;
+        text/*|application/json|inode/x-empty|application/x-subrip) $EDITOR $fx;;
+	image/x-xcf) setsid -f gimp $f >/dev/null 2>&1 ;;
+	image/svg+xml) display -- $f ;;
+	image/*) rotdir $f | grep -i "\.\(png\|jpg\|jpeg\|gif\|webp\|tif\|ico\)\(_large\)*$" |
+		setsid -f nsxiv -aio 2>/dev/null | while read -r file; do
+			[ -z "$file" ] && continue
+			lf -remote "send select \"$file\""
+			lf -remote "send toggle"
+		done &
+		;;
+	audio/*|video/x-ms-asf) mpv --audio-display=no $f ;;
+	video/*) setsid -f mpv $f -quiet >/dev/null 2>&1 ;;
+	application/pdf|application/vnd.djvu|application/epub*) setsid -f zathura $fx >/dev/null 2>&1 ;;
+	application/pgp-encrypted) $EDITOR $fx ;;
+	application/vnd.openxmlformats-officedocument.wordprocessingml.document|application/vnd.oasis.opendocument.text) setsid -f lowriter $fx >/dev/null 2>&1 ;;
+	application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/octet-stream|application/vnd.oasis.opendocument.spreadsheet|application/vnd.oasis.opendocument.spreadsheet-template) setsid -f localc $fx >/dev/null 2>&1 ;;
+	application/vnd.openxmlformats-officedocument.presentationml.presentation|application/vnd.oasis.opendocument.presentation-template|application/vnd.oasis.opendocument.presentation|application/vnd.ms-powerpoint) setsid -f loimpress $fx >/dev/null 2>&1 ;;
+	application/vnd.oasis.opendocument.graphics|application/vnd.oasis.opendocument.graphics-template) setsid -f lodraw $fx >/dev/null 2>&1 ;;
+	application/vnd.oasis.opendocument.formula) setsid -f lomath $fx >/dev/null 2>&1 ;;
+	application/vnd.oasis.opendocument.database) setsid -f lobase $fx >/dev/null 2>&1 ;;
+        *) for f in $fx; do setsid -f $OPENER $f >/dev/null 2>&1; done;;
+    esac
+}}
+
+#cmd mkdir $mkdir -p "$(echo $* | tr ' ' '\ ')"
+#
+#make directories and files
+# cmd mkdir ${{
+#   CACHE=$(mktemp)
+#   for ((i=$#; i>0; i-- )); do
+#     if [ "${1: -1}" = "/" ]; then
+#       mkdir -p "$1"
+#     else
+#       echo "$1" >> "$CACHE"
+#       CDF=$(rg -No ".*/" "$CACHE")
+#       if [ "$CDF" != '' ]; then
+#         mkdir -p "$CDF";
+#       fi
+#       touch "$1"
+#       cat /dev/null > "$CACHE"
+#     fi
+#   shift;
+#   done
+# }}
+
+# cmd mktouch ${{
+#   for path in "$@"
+#   do
+#     if [[ "${path: -1}" == "/" ]]; then
+#       mkdir -p "$path"
+#     else
+#       basedir="$(dirname "$path")"
+#       mkdir -p "$basedir"
+#       touch "$1"
+#     fi
+#   done
+# }}
+# define a custom 'open' command
+# This command is called when current file is not a directory. You may want to
+# use either file extensions and/or mime types here. Below uses an editor for
+# text files and a file opener for the rest.
+# cmd open &{{
+#     case $(file --mime-type -Lb $f) in
+#         text/*) lf -remote "send $id \$$EDITOR \$fx";;
+#         *) for f in $fx; do $OPENER $f > /dev/null 2> /dev/null & done;;
+#     esac
+# }}
+
+cmd bulk-rename ${{
+    old="$(mktemp)"
+    new="$(mktemp)"
+    if [ -n "$fs" ]; then
+        fs="$(basename -a $fs)"
+    else
+        fs="$(ls)"
+    fi
+    printf '%s\n' "$fs" >"$old"
+    printf '%s\n' "$fs" >"$new"
+    $EDITOR "$new"
+    [ "$(wc -l < "$new")" -ne "$(wc -l < "$old")" ] && exit
+    paste "$old" "$new" | while IFS= read -r names; do
+        src="$(printf '%s' "$names" | cut -f1)"
+        dst="$(printf '%s' "$names" | cut -f2)"
+        if [ "$src" = "$dst" ] || [ -e "$dst" ]; then
+            continue
+        fi
+        mv -- "$src" "$dst"
+    done
+    rm -- "$old" "$new"
+    lf -remote "send $id unselect"
+}}
+
+cmd chmod ${{
+  printf "Mode Bits: "
+  read ans
+  do
+    chmod $ans $file
+  done
+
+  lf -remote 'send reload'
+}}
+
+# make sure trash folder exists
+# %mkdir -p ~/.trash
+
+# move current file or selected files to trash folder
+# (also see 'man mv' for backup/overwrite options)
+cmd trash %set -f; mv $fx ~/.trash
+
+%[ $LF_LEVEL -eq 1 ] || echo "Warning: You're in a nested lf instance!"
+
+# use '<delete>' key for either 'trash' or 'delete' command
+# map <delete> trash
+# map <delete> delete
+# extract the current file with the right command
+# (xkcd link: https://xkcd.com/1168/)
+cmd extract ${{
+	clear; tput cup $(($(tput lines)/3)); tput bold
+	set -f
+	printf "%s\n\t" "$fs"
+	printf "extract?[y/N]"
+	read ans
+	[ $ans = "y" ] && aunpack $fx
+}}
+
+cmd moveto ${{
+	#clear; tput cup $(($(tput lines)/3)); tput bold
+	set -f
+	clear; echo "Move to where?"
+	dest="$(sed -e 's/\s*#.*//' -e '/^$/d' -e 's/^\S*\s*//' ${XDG_CONFIG_HOME:-$HOME/.config}/shell/bm-dirs | fzf | sed 's|~|$HOME|')" &&
+	for x in $fx; do
+		eval mv -iv \"$x\" \"$dest\"
+	done &&
+	notify-send "🚚 File(s) moved." "File(s) moved to $dest."
+}}
+
+cmd copyto ${{
+	#clear; tput cup $(($(tput lines)/3)); tput bold
+	set -f
+	clear; echo "Copy to where?"
+	dest="$(sed -e 's/\s*#.*//' -e '/^$/d' -e 's/^\S*\s*//' ${XDG_CONFIG_HOME:-$HOME/.config}/shell/bm-dirs | fzf | sed 's|~|$HOME|')" &&
+	for x in $fx; do
+		eval cp -ivr \"$x\" \"$dest\"
+	done &&
+	notify-send "📋 File(s) copied." "File(s) copies to $dest."
+}}
+
+cmd fzf_jump ${{
+    res="$(fd . -H --max-depth 1 | fzf --reverse --header='Jump to location' | sed 's/\\/\\\\/g;s/"/\\"/g')"
+    if [ -d "$res" ] ; then
+        cmd="cd"
+    elif [ -f "$res" ] ; then
+        cmd="select"
+    else
+        exit 0
+    fi
+    lf -remote "send $id $cmd \"$res\""
+}}
+
+cmd fzf_search ${{
+    res="$( \
+        RG_PREFIX="rg --column --line-number --no-heading --color=always \
+            --smart-case "
+        FZF_DEFAULT_COMMAND="$RG_PREFIX ''" \
+            fzf --bind "change:reload:$RG_PREFIX {q} || true" \
+            --ansi --layout=reverse --header 'Search in files' \
+            | cut -d':' -f1
+    )"
+    [ ! -z "$res" ] && lf -remote "send $id select \"$res\""
+}}
+
+# map S ${{
+#   tmp="/tmp/LF_LAST_DIR_PATH"
+#   echo "$PWD" > $tmp
+#   lf -remote "send $id quit"
+# }}
+cmd Z ${{
+    res=`z-history | fzf --tac --reverse --prompt "z> "`
+    if [ "$res" ]; then
+        lf -remote "send $id cd \"$res\""
+    fi
+}}
+map <c-z> Z
+
+map gw push :cd<space>
+
+map ; push :
+map f :fzf_jump
+map gs :fzf_search
+
+map <c-e> extract
+map <c-c> copyto
+map <c-m> moveto
+# map a push :mktouch<space>
+map a push $mktouch<space>
+
+map R bulk-rename
+map i rename
+map A push i<c-e> # at the very end
+map r push i<c-e><c-u> # new rename
+map I push i<c-a> # at the very beginning
+map Y $printf "%s" "$fx" | xclip -selection clipboard
+
+map w $setsid -f $TERMINAL >/dev/null 2>&1
+# execute current file (must be executable)
+map x $$f
+map X &$f
+# dedicated keys for file opener actions
+map o &mimeopen $f
+map O $mimeopen --ask $f
+
+map D delete

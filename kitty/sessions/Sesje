@@ -1,0 +1,14 @@
+i3_config .config/i3
+kitty_config .config/kitty
+nvim_config .config/nvim
+lua_Learning Documents/CODING/lua-learning
+rust_learning Documents/CODING/rust-learning
+cpp_learning Documents/CODING/cpp-learning
+c_learning Documents/CODING/c-learning
+python_learning Documents/CODING/python-learning
+lf_config .config/lf
+zsh_config .config/zsh
+shell_bin .config/shell
+st_bin git/st
+polybar_config .config/polybar
+rofi_config .config/rofi

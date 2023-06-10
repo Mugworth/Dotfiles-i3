@@ -1,0 +1,42 @@
+##############################################################################################
+########################                                              ########################
+########################               Apps-keybindings                ########################
+########################                                              ########################
+##############################################################################################
+
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/od_neon.png
+# exec_always --no-startup-id      feh --bg-fill ~/git/bspwm_dotfiles/Wallpapers/Dark/4.jpg
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/anime1.png
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/g3S5hGb.jpeg
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/sidonia2-nord.png
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/christ-nord.png
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/mitologia-nord.png
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/cloud.png
+# exec_always --no-startup-id      feh --bg-fill ~/Downloads/wallpapers/sheep-nord2.png
+
+exec_always --no-startup-id      ~/.fehbg
+exec_always --no-startup-id      nm-applet
+exec_always --no-startup-id      ~/.config/polybar/blocks/launch.sh
+exec_always --no-startup-id      killall -q dunst | wait; dunst; ~/.config/dunst/dunst-volume.sh &
+exec_always --no-startup-id      ~/.config/i3/scripts/i3-swallowing.sh
+exec_always --no-startup-id      ~/.config/picom/picomstart.sh
+exec_always --no-startup-id      killall -q eww; sleep 1; eww -c ~/git/bspdots/config/eww/bar daemon
+exec_always --no-startup-id      autotiling -l 2
+exec_always --no-startup-id      killall warpd; warpd
+#########################################################################
+# exec xss-lock -n /usr/lib/xsecurelock/dimmer -l -- /home/kuba/.config/i3/scripts/i3lock.sh
+exec --no-startup-id             ~/.config/i3/scripts/autolock.sh
+exec --no-startup-id             mpd
+
+exec --no-startup-id             mate-polkit
+#exec --no-startup-id             syncthing
+exec --no-startup-id             unclutter -idle 20
+# exec --no-startup-id             xmodmap ~/.config/xmodmap
+exec --no-startup-id             $HOME/.config/i3/scripts/xmodmap.sh
+exec --no-startup-id             clipmenud
+exec --no-startup-id             flatpak run com.spotify.Client; ~/.spicetify/spicetify apply
+exec --no-startup-id             ferdium
+exec --no-startup-id             discord
+exec --no-startup-id             nm-tray
+exec --no-startup-id             sleep 5; notify-send "Hello, i3 :)))" "Have a nice day OwO" --icon ~/.config/dunst/icons/Pingwinek.png
+#########################################################################

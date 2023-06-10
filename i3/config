@@ -1,0 +1,22 @@
+# Please see http://i3wm.org/docs/userguide.html for a complete reference!
+
+include $HOME/.config/i3/config.d/*
+
+floating_modifier        Mod4
+focus_follows_mouse      no
+focus_wrapping           no
+binding_mode_indicator   yes
+
+default_orientation      horizontal
+
+workspace_layout         default
+default_border           pixel 0
+new_float                normal 0
+floating_maximum_size    1920 x 1200
+
+hide_edge_borders                smart
+#smart_gaps on
+gaps inner                       14
+#gaps outer                      -1
+gaps top                         14
+workspace_auto_back_and_forth    no
